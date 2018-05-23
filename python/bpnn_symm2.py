@@ -10,13 +10,21 @@
 
 import math
 import random
-import string
+from tqdm import tqdm
+import matplotlib.pyplot as plt
+from datetime import datetime
 
 random.seed(0)
+
 
 # calculate a random number where:  a <= rand < b
 def rand(a, b):
     return (b - a) * random.random() + a
+
+
+def randn(coefficient=0.01):
+    return random.normalvariate(0.0, 1.0)
+
 
 # Make a matrix (we could use NumPy to speed this up)
 def makeMatrix(I, J, fill=0.0):
@@ -25,16 +33,29 @@ def makeMatrix(I, J, fill=0.0):
         m.append([fill] * J)
     return m
 
+
 # sigmoid function
 def sigmoid(x):
     return 1.0 / (1.0 + math.exp(-x))
+
+
+# our sigmoid function, tanh is a little nicer than the standard 1/(1+e^-x)
+def tanh(x):
+    return math.tanh(x)
+
 
 # derivative of our sigmoid function, in terms of the output (i.e. y)
 def dsigmoid(y):
     return y * (1.0 - y)
 
+
+# derivative of our sigmoid function, in terms of the output (i.e. y)
+def dtanh(y):
+    return 1.0 - y ** 2
+
+
 class NN:
-    def __init__(self, ni, nh, no):
+    def __init__(self, ni, nh, no, title='none'):
         # number of input, hidden, and output nodes
         self.ni = ni + 1  # +1 for bias node
         self.nh = nh + 1  # +1 for bias node
@@ -51,18 +72,31 @@ class NN:
         # set them to random vaules
         for i in range(self.ni):
             for j in range(self.nh):
-                self.wi[i][j] = rand(-0.2, 0.2)
+                #self.wi[i][j] = rand(-0.2, 0.2)
+                #self.wi[i][j] = rand(-1.0, 1.0)
+                self.wi[i][j] = randn()
         for j in range(self.nh):
             for k in range(self.no):
-                self.wo[j][k] = rand(-2.0, 2.0)
+                #self.wo[j][k] = rand(-2.0, 2.0)
+                #self.wo[j][k] = rand(-1.0, 1.0)
+                self.wo[j][k] = randn()
 
         # last change in weights for momentum   
         self.ci = makeMatrix(self.ni, self.nh)
         self.co = makeMatrix(self.nh, self.no)
+        self.activation = sigmoid
+        self.dactivation = dsigmoid
+        self.errors = []
+        self.iteration_num = None
+        self.title = title
+        self.epoch = 1
 
-    def update(self, inputs):
-        if len(inputs) != self.ni-1:
+    def update(self, inputs, activation=None):
+        if len(inputs) != self.ni - 1:
             raise ValueError('wrong number of inputs')
+
+        if activation is None:
+            activation = self.activation
 
         # input activations
         for i in range(self.ni - 1):
@@ -80,14 +114,16 @@ class NN:
             sum = 0.0
             for j in range(self.nh):
                 sum = sum + self.ah[j] * self.wo[j][k]
-            self.ao[k] = sigmoid(sum)
+            self.ao[k] = activation(sum)
 
         return self.ao[:]
 
-
-    def backPropagate(self, targets, N, M):
+    def backPropagate(self, targets, N, M, dactivation=None):
         if len(targets) != self.no:
             raise ValueError('wrong number of target values')
+
+        if dactivation is None:
+            dactivation = self.dactivation
 
         # calculate error terms for output
         output_deltas = [0.0] * self.no
@@ -109,7 +145,7 @@ class NN:
                 change = output_deltas[k] * self.ah[j]
                 self.wo[j][k] = self.wo[j][k] + N * change + M * self.co[j][k]
                 self.co[j][k] = change
-                #print N*change, M*self.co[j][k]
+                # print N*change, M*self.co[j][k]
 
         # update input weights
         for i in range(self.ni):
@@ -124,7 +160,6 @@ class NN:
             error = error + 0.5 * (targets[k] - self.ao[k]) ** 2
         return error
 
-
     def test(self, patterns):
         for p in patterns:
             print(p[0], '->', self.update(p[0]))
@@ -138,18 +173,50 @@ class NN:
         for j in range(self.nh):
             print(self.wo[j])
 
-    def train(self, patterns, iterations=10000, N=0.5, M=0.1):
+    def train(self, patterns, iterations=1000, N=0.5, M=0.1):
         # N: learning rate
         # M: momentum factor
-        for i in range(iterations):
+        self.epoch = len(patterns)
+        self.iteration_num = iterations
+        for i in tqdm(range(iterations * self.epoch)):
             error = 0.0
             for p in patterns:
                 inputs = p[0]
                 targets = p[1]
                 self.update(inputs)
                 error = error + self.backPropagate(targets, N, M)
-            if i % 100 == 0:
+            if i % self.epoch == 0:
+                self.errors.append(error)
+
+    def print_error(self, is_graph=False):
+        if is_graph is True:
+            x = [x for x, _ in enumerate(self.errors)]
+            plt.plot(x, self.errors)
+
+            plt.xlabel("epoch")
+            plt.ylabel("error")
+            plt.title(f'title:{self.title}, '
+                      f'perceptron=[{self.ni-1}, {self.nh-1}, {self.no}], \n'
+                      f'iter={self.iteration_num}, '
+                      f'activation={self.get_activation()}, '
+                      f'dactivation={self.get_dactivation()} ')
+            plt.ylim(0.0, max(self.errors) + 1.0)
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            plt.savefig(timestamp + '.pdf')
+            plt.show()
+        else:
+            for error in self.errors:
                 print('error %-.5f' % error)
+
+    def get_activation(self):
+        if self.activation is tanh:
+            return "tanh"
+        return "sigmoid"
+
+    def get_dactivation(self):
+        if self.dactivation is dtanh:
+            return 'dtanh'
+        return 'dsigmoid'
 
 
 def demo():
@@ -162,12 +229,14 @@ def demo():
     ]
 
     # create a network with two input, two hidden, and one output nodes
-    n = NN(2, 2, 1)
+    n = NN(2, 2, 1, title='XOR')
+    #n.activation = tanh
+    #n.dactivation = dtanh
     # train it with some patterns
-    n.train(pat)
+    n.train(pat, iterations=10000)
+    n.print_error(is_graph=True)
     # test it
     n.test(pat)
-
 
 
 def demo_symmetry_detection():
@@ -241,13 +310,16 @@ def demo_symmetry_detection():
     ]
 
     # create a network with two input, two hidden, and one output nodes
-    n = NN(6, 2, 1)
+    n = NN(6, 2, 1, title='Mirror')
     # train it with some patterns
-    n.train(pat)
+    #n.activation = tanh
+    #n.dactivation = dtanh
+    n.train(pat, iterations=10000)
+    n.print_error(is_graph=True)
     # test it
     n.test(pat)
 
 
 if __name__ == '__main__':
-    # demo_symmetry_detection()
-    demo()
+    demo_symmetry_detection()
+    #demo()
