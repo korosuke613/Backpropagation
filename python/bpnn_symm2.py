@@ -23,7 +23,7 @@ def rand(a, b):
 
 
 def randn(coefficient=0.01):
-    return random.normalvariate(0.0, 1.0)
+    return coefficient * random.normalvariate(0.0, 1.0)
 
 
 # Make a matrix (we could use NumPy to speed this up)
@@ -314,12 +314,102 @@ def demo_symmetry_detection():
     # train it with some patterns
     #n.activation = tanh
     #n.dactivation = dtanh
-    n.train(pat, iterations=10000)
+    n.train(pat, iterations=100)
     n.print_error(is_graph=True)
     # test it
     n.test(pat)
 
 
+class NNSin(NN):
+    def __init__(self, ni, nh, no, title='none'):
+        super().__init__(ni, nh, no, title)
+        self.pattern = None
+
+    def print_error(self, is_graph=False):
+        if is_graph is True:
+            x = [x for x, _ in enumerate(self.errors)]
+            plt.plot(x, self.errors)
+
+            plt.xlabel("epoch")
+            plt.ylabel("error")
+            plt.title(f'title:{self.title}, '
+                      f'perceptron=[{self.ni-1}, {self.nh-1}, {self.no}], \n'
+                      f'iter={self.iteration_num}, '
+                      f'activation={self.get_activation()}, '
+                      f'dactivation={self.get_dactivation()} ')
+            plt.ylim(0.0, max(self.errors) + 1.0)
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            plt.savefig(timestamp + '.error.pdf')
+            plt.show()
+
+            plt.title(f'title:{self.title}, '
+                      f'perceptron=[{self.ni-1}, {self.nh-1}, {self.no}], \n'
+                      f'iter={self.iteration_num}, '
+                      f'activation={self.get_activation()}, '
+                      f'dactivation={self.get_dactivation()} ')
+            self.draw()
+            for i in [(0, 'red'), (1, 'blue')]:
+                x_set = [x[0][0] for x in self.pattern if x[1][0] == i[0]]
+                y_set = [y[0][1] for y in self.pattern if y[1][0] == i[0]]
+                plt.scatter(x_set, y_set, c=i[1])
+
+            x_set = [x / 10.0 for x in range(-60, 60)]
+            y_set = [math.sin(math.pi / 2 * x) for x in x_set]
+            plt.plot(x_set, y_set)
+            plt.savefig(timestamp + '.draw.pdf')
+            plt.show()
+        else:
+            for error in self.errors:
+                print('error %-.5f' % error)
+
+    def draw(self):
+        def generate_all_patterns():
+            x_set = [x for x in range(-300, 300)]
+            y_set = [y for y in range(-75, 75)]
+            learn_data = [[x/50, y/50] for x in x_set for y in y_set]
+            return learn_data
+
+        patterns = generate_all_patterns()
+        result = []
+        for p in patterns:
+            result.append(self.update(p))
+        drow_p = [p for i, p in enumerate(patterns) if result[i][0] <= 0.2]
+        draw_x = [x[0] for x in drow_p]
+        draw_y = [y[1] for y in drow_p]
+        plt.scatter(draw_x, draw_y, marker='.', c='coral', s=0.1)
+        drow_p = [p for i, p in enumerate(patterns) if result[i][0] >= 0.8]
+        draw_x = [x[0] for x in drow_p]
+        draw_y = [y[1] for y in drow_p]
+        plt.scatter(draw_x, draw_y, marker='.', c='aqua', s=0.1)
+
+
+def demo_sin_curve():
+    EPOCH = 200
+
+    def generate_leaning_data(num=100):
+        learn_data = []
+        for _ in range(num):
+            x = rand(-6.0, 6.0)
+            y = rand(-1.5, 1.5)
+            sin_y = math.sin(math.pi / 2 * x)
+            correct = 0
+            if y >= sin_y:
+                correct = 1
+            learn_data.append([[x, y], [correct]])
+        return learn_data
+
+    pat = generate_leaning_data()
+
+    n = NNSin(2, 5, 1, title='sin_curve')
+    n.pattern = pat
+    n.activation = tanh
+    n.dactivation = dtanh
+    n.train(pat, iterations=EPOCH)
+    n.print_error(is_graph=True)
+    n.test(pat)
+
+
 if __name__ == '__main__':
-    demo_symmetry_detection()
+    #demo_symmetry_detection()
     #demo()
+    demo_sin_curve()
