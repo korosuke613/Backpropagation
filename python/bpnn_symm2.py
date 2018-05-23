@@ -16,35 +16,35 @@ random.seed(0)
 
 # calculate a random number where:  a <= rand < b
 def rand(a, b):
-    return (b-a)*random.random() + a
+    return (b - a) * random.random() + a
 
 # Make a matrix (we could use NumPy to speed this up)
 def makeMatrix(I, J, fill=0.0):
     m = []
     for i in range(I):
-        m.append([fill]*J)
+        m.append([fill] * J)
     return m
 
 # sigmoid function
 def sigmoid(x):
-    return 1.0/(1.0 + math.exp(-x))
+    return 1.0 / (1.0 + math.exp(-x))
 
 # derivative of our sigmoid function, in terms of the output (i.e. y)
 def dsigmoid(y):
-    return y*(1.0 - y)
+    return y * (1.0 - y)
 
 class NN:
     def __init__(self, ni, nh, no):
         # number of input, hidden, and output nodes
-        self.ni = ni + 1 # +1 for bias node
-        self.nh = nh + 1 # +1 for bias node
+        self.ni = ni + 1  # +1 for bias node
+        self.nh = nh + 1  # +1 for bias node
         self.no = no
 
         # activations for nodes
-        self.ai = [1.0]*self.ni
-        self.ah = [1.0]*self.nh
-        self.ao = [1.0]*self.no
-        
+        self.ai = [1.0] * self.ni
+        self.ah = [1.0] * self.nh
+        self.ao = [1.0] * self.no
+
         # create weights
         self.wi = makeMatrix(self.ni, self.nh)
         self.wo = makeMatrix(self.nh, self.no)
@@ -65,16 +65,15 @@ class NN:
             raise ValueError('wrong number of inputs')
 
         # input activations
-        for i in range(self.ni-1):
-            #self.ai[i] = sigmoid(inputs[i])
+        for i in range(self.ni - 1):
             self.ai[i] = inputs[i]
 
         # hidden activations
-        for j in range(self.nh-1):
+        for j in range(self.nh - 1):
             sum = 0.0
             for i in range(self.ni):
                 sum = sum + self.ai[i] * self.wi[i][j]
-            self.ah[j] = sigmoid(sum)
+            self.ah[j] = activation(sum)
 
         # output activations
         for k in range(self.no):
@@ -93,36 +92,36 @@ class NN:
         # calculate error terms for output
         output_deltas = [0.0] * self.no
         for k in range(self.no):
-            error = targets[k]-self.ao[k]
-            output_deltas[k] = dsigmoid(self.ao[k]) * error
+            error = targets[k] - self.ao[k]
+            output_deltas[k] = dactivation(self.ao[k]) * error
 
         # calculate error terms for hidden
         hidden_deltas = [0.0] * self.nh
-        for j in range(self.nh-1):
+        for j in range(self.nh - 1):
             error = 0.0
             for k in range(self.no):
-                error = error + output_deltas[k]*self.wo[j][k]
-            hidden_deltas[j] = dsigmoid(self.ah[j]) * error
+                error = error + output_deltas[k] * self.wo[j][k]
+            hidden_deltas[j] = dactivation(self.ah[j]) * error
 
         # update output weights
         for j in range(self.nh):
             for k in range(self.no):
-                change = output_deltas[k]*self.ah[j]
-                self.wo[j][k] = self.wo[j][k] + N*change + M*self.co[j][k]
+                change = output_deltas[k] * self.ah[j]
+                self.wo[j][k] = self.wo[j][k] + N * change + M * self.co[j][k]
                 self.co[j][k] = change
                 #print N*change, M*self.co[j][k]
 
         # update input weights
         for i in range(self.ni):
-            for j in range(self.nh-1):
-                change = hidden_deltas[j]*self.ai[i]
-                self.wi[i][j] = self.wi[i][j] + N*change + M*self.ci[i][j]
+            for j in range(self.nh - 1):
+                change = hidden_deltas[j] * self.ai[i]
+                self.wi[i][j] = self.wi[i][j] + N * change + M * self.ci[i][j]
                 self.ci[i][j] = change
 
         # calculate error
         error = 0.0
         for k in range(len(targets)):
-            error = error + 0.5*(targets[k]-self.ao[k])**2
+            error = error + 0.5 * (targets[k] - self.ao[k]) ** 2
         return error
 
 
@@ -156,10 +155,10 @@ class NN:
 def demo():
     # Teach network XOR function
     pat = [
-        [[0,0], [0]],
-        [[0,1], [1]],
-        [[1,0], [1]],
-        [[1,1], [0]]
+        [[0, 0], [0]],
+        [[0, 1], [1]],
+        [[1, 0], [1]],
+        [[1, 1], [0]]
     ]
 
     # create a network with two input, two hidden, and one output nodes
@@ -175,70 +174,70 @@ def demo_symmetry_detection():
     # Teach network XOR function
 
     pat = [
-        [[0,0,0,0,0,0],[1]],
-        [[0,0,0,0,0,1],[0]],
-        [[0,0,0,0,1,0],[0]],
-        [[0,0,0,0,1,1],[0]],
-        [[0,0,0,1,0,0],[0]],
-        [[0,0,0,1,0,1],[0]],
-        [[0,0,0,1,1,0],[0]],
-        [[0,0,0,1,1,1],[0]],
-        [[0,0,1,0,0,0],[0]],
-        [[0,0,1,0,0,1],[0]],
-        [[0,0,1,0,1,0],[0]],
-        [[0,0,1,0,1,1],[0]],
-        [[0,0,1,1,0,0],[1]],
-        [[0,0,1,1,0,1],[0]],
-        [[0,0,1,1,1,0],[0]],
-        [[0,0,1,1,1,1],[0]],
-        [[0,1,0,0,0,0],[0]],
-        [[0,1,0,0,0,1],[0]],
-        [[0,1,0,0,1,0],[1]],
-        [[0,1,0,0,1,1],[0]],
-        [[0,1,0,1,0,0],[0]],
-        [[0,1,0,1,0,1],[0]],
-        [[0,1,0,1,1,0],[0]],
-        [[0,1,0,1,1,1],[0]],
-        [[0,1,1,0,0,0],[0]],
-        [[0,1,1,0,0,1],[0]],
-        [[0,1,1,0,1,0],[0]],
-        [[0,1,1,0,1,1],[0]],
-        [[0,1,1,1,0,0],[0]],
-        [[0,1,1,1,0,1],[0]],
-        [[0,1,1,1,1,0],[1]],
-        [[0,1,1,1,1,1],[0]],
-        [[1,0,0,0,0,0],[0]],
-        [[1,0,0,0,0,1],[1]],
-        [[1,0,0,0,1,0],[0]],
-        [[1,0,0,0,1,1],[0]],
-        [[1,0,0,1,0,0],[0]],
-        [[1,0,0,1,0,1],[0]],
-        [[1,0,0,1,1,0],[0]],
-        [[1,0,0,1,1,1],[0]],
-        [[1,0,1,0,0,0],[0]],
-        [[1,0,1,0,0,1],[0]],
-        [[1,0,1,0,1,0],[0]],
-        [[1,0,1,0,1,1],[0]],
-        [[1,0,1,1,0,0],[0]],
-        [[1,0,1,1,0,1],[1]],
-        [[1,0,1,1,1,0],[0]],
-        [[1,0,1,1,1,1],[0]],
-        [[1,1,0,0,0,0],[0]],
-        [[1,1,0,0,0,1],[0]],
-        [[1,1,0,0,1,0],[0]],
-        [[1,1,0,0,1,1],[1]],
-        [[1,1,0,1,0,0],[0]],
-        [[1,1,0,1,0,1],[0]],
-        [[1,1,0,1,1,0],[0]],
-        [[1,1,0,1,1,1],[0]],
-        [[1,1,1,0,0,0],[0]],
-        [[1,1,1,0,0,1],[0]],
-        [[1,1,1,0,1,0],[0]],
-        [[1,1,1,0,1,1],[0]],
-        [[1,1,1,1,0,0],[0]],
-        [[1,1,1,1,0,1],[0]],
-        [[1,1,1,1,1,0],[0]],
-        [[1,1,1,1,1,1],[1]]
+        [[0, 0, 0, 0, 0, 0], [1]],
+        [[0, 0, 0, 0, 0, 1], [0]],
+        [[0, 0, 0, 0, 1, 0], [0]],
+        [[0, 0, 0, 0, 1, 1], [0]],
+        [[0, 0, 0, 1, 0, 0], [0]],
+        [[0, 0, 0, 1, 0, 1], [0]],
+        [[0, 0, 0, 1, 1, 0], [0]],
+        [[0, 0, 0, 1, 1, 1], [0]],
+        [[0, 0, 1, 0, 0, 0], [0]],
+        [[0, 0, 1, 0, 0, 1], [0]],
+        [[0, 0, 1, 0, 1, 0], [0]],
+        [[0, 0, 1, 0, 1, 1], [0]],
+        [[0, 0, 1, 1, 0, 0], [1]],
+        [[0, 0, 1, 1, 0, 1], [0]],
+        [[0, 0, 1, 1, 1, 0], [0]],
+        [[0, 0, 1, 1, 1, 1], [0]],
+        [[0, 1, 0, 0, 0, 0], [0]],
+        [[0, 1, 0, 0, 0, 1], [0]],
+        [[0, 1, 0, 0, 1, 0], [1]],
+        [[0, 1, 0, 0, 1, 1], [0]],
+        [[0, 1, 0, 1, 0, 0], [0]],
+        [[0, 1, 0, 1, 0, 1], [0]],
+        [[0, 1, 0, 1, 1, 0], [0]],
+        [[0, 1, 0, 1, 1, 1], [0]],
+        [[0, 1, 1, 0, 0, 0], [0]],
+        [[0, 1, 1, 0, 0, 1], [0]],
+        [[0, 1, 1, 0, 1, 0], [0]],
+        [[0, 1, 1, 0, 1, 1], [0]],
+        [[0, 1, 1, 1, 0, 0], [0]],
+        [[0, 1, 1, 1, 0, 1], [0]],
+        [[0, 1, 1, 1, 1, 0], [1]],
+        [[0, 1, 1, 1, 1, 1], [0]],
+        [[1, 0, 0, 0, 0, 0], [0]],
+        [[1, 0, 0, 0, 0, 1], [1]],
+        [[1, 0, 0, 0, 1, 0], [0]],
+        [[1, 0, 0, 0, 1, 1], [0]],
+        [[1, 0, 0, 1, 0, 0], [0]],
+        [[1, 0, 0, 1, 0, 1], [0]],
+        [[1, 0, 0, 1, 1, 0], [0]],
+        [[1, 0, 0, 1, 1, 1], [0]],
+        [[1, 0, 1, 0, 0, 0], [0]],
+        [[1, 0, 1, 0, 0, 1], [0]],
+        [[1, 0, 1, 0, 1, 0], [0]],
+        [[1, 0, 1, 0, 1, 1], [0]],
+        [[1, 0, 1, 1, 0, 0], [0]],
+        [[1, 0, 1, 1, 0, 1], [1]],
+        [[1, 0, 1, 1, 1, 0], [0]],
+        [[1, 0, 1, 1, 1, 1], [0]],
+        [[1, 1, 0, 0, 0, 0], [0]],
+        [[1, 1, 0, 0, 0, 1], [0]],
+        [[1, 1, 0, 0, 1, 0], [0]],
+        [[1, 1, 0, 0, 1, 1], [1]],
+        [[1, 1, 0, 1, 0, 0], [0]],
+        [[1, 1, 0, 1, 0, 1], [0]],
+        [[1, 1, 0, 1, 1, 0], [0]],
+        [[1, 1, 0, 1, 1, 1], [0]],
+        [[1, 1, 1, 0, 0, 0], [0]],
+        [[1, 1, 1, 0, 0, 1], [0]],
+        [[1, 1, 1, 0, 1, 0], [0]],
+        [[1, 1, 1, 0, 1, 1], [0]],
+        [[1, 1, 1, 1, 0, 0], [0]],
+        [[1, 1, 1, 1, 0, 1], [0]],
+        [[1, 1, 1, 1, 1, 0], [0]],
+        [[1, 1, 1, 1, 1, 1], [1]]
     ]
 
     # create a network with two input, two hidden, and one output nodes
