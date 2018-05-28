@@ -22,7 +22,7 @@ def rand(a, b):
     return (b - a) * random.random() + a
 
 
-def randn(coefficient=0.01):
+def randn(coefficient=0.1):
     return coefficient * random.normalvariate(0.0, 1.0)
 
 
@@ -310,7 +310,7 @@ def demo_symmetry_detection():
     ]
 
     # create a network with two input, two hidden, and one output nodes
-    n = NN(6, 2, 1, title='Mirror')
+    n = NN(6, 5, 1, title='Mirror')
     # train it with some patterns
     #n.activation = tanh
     #n.dactivation = dtanh
@@ -384,7 +384,7 @@ class NNSin(NN):
 
 
 def demo_sin_curve():
-    EPOCH = 200
+    EPOCH = 10000
 
     def generate_leaning_data(num=100):
         learn_data = []
@@ -402,8 +402,8 @@ def demo_sin_curve():
 
     n = NNSin(2, 5, 1, title='sin_curve')
     n.pattern = pat
-    n.activation = tanh
-    n.dactivation = dtanh
+    #n.activation = tanh
+    #n.dactivation = dtanh
     n.train(pat, iterations=EPOCH)
     n.print_error(is_graph=True)
     n.test(pat)
