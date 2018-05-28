@@ -1,12 +1,11 @@
-# Back-Propagation Neural Networks
+﻿# Back-Propagation Neural Networks
 # 
 # Written in Python.  See http://www.python.org/
 # Placed in the public domain.
 # Neil Schemenauer <nas@arctrix.com>
 #
-# demo_symmetry_detection added by Akira Date
-# bugs(?) fixed
-# I don't know why this code doesn't work. 
+# bugs(?) fixed by Akira Date <date@cs.miyazaki-u.ac.jp>
+# But I don't feel this code work better than the oroginal.
 
 import math
 import random
@@ -33,7 +32,6 @@ def makeMatrix(I, J, fill=0.0):
         m.append([fill] * J)
     return m
 
-
 # sigmoid function
 def sigmoid(x):
     return 1.0 / (1.0 + math.exp(-x))
@@ -52,7 +50,6 @@ def dsigmoid(y):
 # derivative of our sigmoid function, in terms of the output (i.e. y)
 def dtanh(y):
     return 1.0 - y ** 2
-
 
 class NN:
     def __init__(self, ni, nh, no, title='none'):
@@ -75,13 +72,15 @@ class NN:
                 #self.wi[i][j] = rand(-0.2, 0.2)
                 #self.wi[i][j] = rand(-1.0, 1.0)
                 self.wi[i][j] = randn()
+                #self.wi[i][j] = random.gauss(0, 0.2)
         for j in range(self.nh):
             for k in range(self.no):
                 #self.wo[j][k] = rand(-2.0, 2.0)
                 #self.wo[j][k] = rand(-1.0, 1.0)
                 self.wo[j][k] = randn()
+                #self.wi[i][j] = random.gauss(0, 0.2)
 
-        # last change in weights for momentum   
+        # last change in weights for momentum
         self.ci = makeMatrix(self.ni, self.nh)
         self.co = makeMatrix(self.nh, self.no)
         self.activation = sigmoid
@@ -134,6 +133,7 @@ class NN:
         # calculate error terms for hidden
         hidden_deltas = [0.0] * self.nh
         for j in range(self.nh - 1):
+        #for j in range(self.nh):
             error = 0.0
             for k in range(self.no):
                 error = error + output_deltas[k] * self.wo[j][k]
@@ -142,17 +142,19 @@ class NN:
         # update output weights
         for j in range(self.nh):
             for k in range(self.no):
-                change = output_deltas[k] * self.ah[j]
-                self.wo[j][k] = self.wo[j][k] + N * change + M * self.co[j][k]
-                self.co[j][k] = change
-                # print N*change, M*self.co[j][k]
+                change = output_deltas[k]*self.ah[j]
+                self.wo[j][k] = self.wo[j][k] + N*change + M*self.co[j][k]
+                ## self.co[j][k] = change
+                self.co[j][k] = N*change + M*self.co[j][k]
+                #print N*change, M*self.co[j][k]
 
         # update input weights
         for i in range(self.ni):
-            for j in range(self.nh - 1):
-                change = hidden_deltas[j] * self.ai[i]
-                self.wi[i][j] = self.wi[i][j] + N * change + M * self.ci[i][j]
-                self.ci[i][j] = change
+            for j in range(self.nh):
+                change = hidden_deltas[j]*self.ai[i]
+                self.wi[i][j] = self.wi[i][j] + N*change + M*self.ci[i][j]
+                ## self.ci[i][j] = change
+                self.ci[i][j] = N*change + M*self.ci[i][j]
 
         # calculate error
         error = 0.0
@@ -173,7 +175,8 @@ class NN:
         for j in range(self.nh):
             print(self.wo[j])
 
-    def train(self, patterns, iterations=1000, N=0.5, M=0.1):
+    ## def train(self, patterns, iterations=1000, N=0.5, M=0.1):
+    def train(self, patterns, iterations=1000, N=0.1, M=0.9):
         # N: learning rate
         # M: momentum factor
         self.epoch = len(patterns)
@@ -240,8 +243,7 @@ def demo():
 
 
 def demo_symmetry_detection():
-    # Teach network XOR function
-
+    # Teach network symmetry detecting function
     pat = [
         [[0, 0, 0, 0, 0, 0], [1]],
         [[0, 0, 0, 0, 0, 1], [0]],
@@ -318,7 +320,7 @@ def demo_symmetry_detection():
     n.print_error(is_graph=True)
     # test it
     n.test(pat)
-
+    
 
 class NNSin(NN):
     def __init__(self, ni, nh, no, title='none'):
@@ -411,5 +413,5 @@ def demo_sin_curve():
 
 if __name__ == '__main__':
     #demo_symmetry_detection()
-    #demo()
-    demo_sin_curve()
+    demo()
+    #demo_sin_curve()
